@@ -1,21 +1,23 @@
-import { cli } from "gulpachek";
-import { C, platformCompiler } from "gulpachek-c";
+import { cli, Path } from "gulpachek";
 import { globSync } from "glob";
 
 cli((book) => {
-  const c = new C(platformCompiler(), {
-    book,
-    cVersion: "C17",
+  const src = globSync("src/*.c").map((p) => Path.src(p));
+  const obj = src.map((s) => Path.gen(s, { ext: ".o" }));
+  const include = Path.src("include");
+
+  const lib = Path.build("libunixsocket.dylib");
+  book.add(lib, obj, (args) => {
+    const out = args.abs(lib);
+    const objs = args.absAll(...obj);
+
+    return args.spawn("clang", ["-dynamiclib", "-o", out, ...objs]);
   });
 
-  book.add("all", []);
-
-  const lib = c.addLibrary({
-    name: "unixsocket",
-    version: "0.1.0",
-    includePaths: ["include"],
-    src: globSync("src/*.c"),
-  });
-
-  book.add("all", lib);
+  for (let i = 0; i < obj.length; ++i) {
+    book.add(obj[i], src[i], (args) => {
+      const [s, o, inc] = args.absAll(src[i], obj[i], include);
+      return args.spawn("clang", ["-std=c17", "-c", "-o", o, s, "-I", inc]);
+    });
+  }
 });
