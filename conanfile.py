@@ -1,5 +1,6 @@
 from conan import ConanFile
-from conan.tools.files import chdir
+from conan.tools.files import chdir, copy
+from os.path import join
 
 class BasicConanfile(ConanFile):
     name = "unixsocket"
@@ -25,12 +26,15 @@ class BasicConanfile(ConanFile):
     def build(self):
         with chdir(self, 'libunixsocket'):
             self.run("npm install")
-            self.run("ls node_modules")
             self.run("node make.js")
 
     def package(self):
-        self.run("pwd")
-        self.run("ls")
         d = join(self.source_folder, 'libunixsocket')
-        self.copy("*.h", join(d, "include"), join(self.package_folder, "include"), keep_path=False)
-        self.copy("package*.json", d, self.package_folder, keep_path=False)
+        build = join(d, "build")
+        include = join(d, "include")
+        copy(self, "*.h", include, join(self.package_folder, "include"))
+        copy(self, "libunixsocket.dylib", build, join(self.package_folder, "lib"))
+        copy(self, "package*.json", d, self.package_folder)
+
+    def package_info(self):
+        self.cpp_info.libs = ["unixsocket"]
