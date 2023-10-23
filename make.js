@@ -1,4 +1,4 @@
-import { cli, Path } from "iheartmake";
+import { cli, Path } from "esmakefile";
 import { globSync } from "glob";
 
 cli((book) => {
