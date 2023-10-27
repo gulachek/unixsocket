@@ -10,7 +10,7 @@ class BasicConanfile(ConanFile):
     homepage = "https://gulachek.com"
 
     def source(self):
-        self.run("git clone ~/Code/projects/libunixsocket")
+        self.run("git clone git@github.com:gulachek/unixsocket.git")
 
     def requirements(self):
         pass
