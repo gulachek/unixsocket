@@ -1,5 +1,5 @@
 import { cli, Path } from "esmakefile";
-import { writeFile } from "node:fs/promises";
+import { writeFile, readFile } from "node:fs/promises";
 
 cli((make) => {
   const src = Path.src("src/unixsocket.c");
@@ -21,9 +21,36 @@ cli((make) => {
     ]);
   });
 
-  make.add(obj, src, (args) => {
+  make.add(obj, src, async (args) => {
     const [s, o] = args.absAll(src, obj);
-    return args.spawn("clang", [...cflags, "-o", o, s]);
+    const deps = args.abs(Path.gen(src, { ext: ".d" }));
+
+    const result = await args.spawn("clang", [
+      ...cflags,
+      "-o",
+      o,
+      "-MMD",
+      "-MF",
+      deps,
+      s,
+    ]);
+
+    if (!result) return false;
+
+    const depContents = await readFile(deps, "utf8");
+    const escapedLines = depContents.replaceAll("\\\n", " ");
+
+    const lines = escapedLines.split("\n");
+    if (lines.length < 1) return result;
+
+    const colonIndex = lines[0].indexOf(":");
+    if (colonIndex < 0) return result;
+
+    for (const postreq of lines[0].slice(colonIndex + 1).split(/ +/)) {
+      if (!postreq) continue;
+
+      args.addPostreq(postreq);
+    }
   });
 
   make.add(compileCommands, async (args) => {
