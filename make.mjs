@@ -1,5 +1,5 @@
 import { cli, Path } from "esmakefile";
-import { writeFile, readFile } from "node:fs/promises";
+import { writeFile, readFile, rename, rm } from "node:fs/promises";
 
 cli((make) => {
   const src = Path.src("src/unixsocket.c");
@@ -7,10 +7,12 @@ cli((make) => {
   const include = Path.src("include");
   const compileCommands = Path.build("compile_commands.json");
   const lib = Path.build("libunixsocket.dylib");
+  const doxyfile = Path.src("Doxyfile");
+  const html = Path.build("html/index.html");
 
   const cflags = ["-c", "-std=c17", "-I", make.abs(include)];
 
-  make.add("all", [lib, compileCommands]);
+  make.add("all", [lib, compileCommands, html]);
 
   make.add(lib, obj, (args) => {
     return args.spawn("clang", [
@@ -66,5 +68,9 @@ cli((make) => {
     ]);
 
     await writeFile(j, contents, "utf8");
+  });
+
+  make.add(html, [doxyfile, Path.src("include/unixsocket.h")], async (args) => {
+    return args.spawn("doxygen", [args.abs(doxyfile)]);
   });
 });
