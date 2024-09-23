@@ -1,5 +1,19 @@
 import { cli, Path } from "esmakefile";
-import { writeFile, readFile, rename, rm } from "node:fs/promises";
+import { writeFile, readFile } from "node:fs/promises";
+import nunjucks from "nunjucks";
+
+function njxRender(name, context) {
+  return new Promise((resolve, reject) => {
+    nunjucks.render(name, context, (err, res) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+
+      resolve(res);
+    });
+  });
+}
 
 cli((make) => {
   const src = Path.src("src/unixsocket.c");
@@ -7,7 +21,8 @@ cli((make) => {
   const include = Path.src("include");
   const compileCommands = Path.build("compile_commands.json");
   const lib = Path.build("libunixsocket.dylib");
-  const doxyfile = Path.src("Doxyfile");
+  const doxyfileTemplate = Path.src("Doxyfile.njk");
+  const doxyfile = Path.build("Doxyfile");
   const html = Path.build("html/index.html");
 
   const cflags = ["-c", "-std=c17", "-I", make.abs(include)];
@@ -68,6 +83,14 @@ cli((make) => {
     ]);
 
     await writeFile(j, contents, "utf8");
+  });
+
+  make.add(doxyfile, [doxyfileTemplate], async (args) => {
+    const res = await njxRender(args.abs(doxyfileTemplate), {
+      outputDir: make.buildRoot,
+      includeDir: args.abs(include),
+    });
+    await writeFile(args.abs(doxyfile), res, "utf8");
   });
 
   make.add(html, [doxyfile, Path.src("include/unixsocket.h")], async (args) => {
