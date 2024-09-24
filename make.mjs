@@ -15,6 +15,23 @@ function njxRender(name, context) {
   });
 }
 
+async function addClangDeps(args, depsAbs) {
+  const depContents = await readFile(depsAbs, "utf8");
+  const escapedLines = depContents.replaceAll("\\\n", " ");
+
+  const lines = escapedLines.split("\n");
+  if (lines.length < 1) return;
+
+  const colonIndex = lines[0].indexOf(":");
+  if (colonIndex < 0) return;
+
+  for (const postreq of lines[0].slice(colonIndex + 1).split(/ +/)) {
+    if (!postreq) continue;
+
+    args.addPostreq(postreq);
+  }
+}
+
 cli((make) => {
   const src = Path.src("src/unixsocket.c");
   const include = Path.src("include");
@@ -63,21 +80,9 @@ cli((make) => {
       ]);
 
       if (!result) return false;
+      await addClangDeps(args, deps);
 
-      const depContents = await readFile(deps, "utf8");
-      const escapedLines = depContents.replaceAll("\\\n", " ");
-
-      const lines = escapedLines.split("\n");
-      if (lines.length < 1) return result;
-
-      const colonIndex = lines[0].indexOf(":");
-      if (colonIndex < 0) return result;
-
-      for (const postreq of lines[0].slice(colonIndex + 1).split(/ +/)) {
-        if (!postreq) continue;
-
-        args.addPostreq(postreq);
-      }
+      return true;
     });
   }
 
