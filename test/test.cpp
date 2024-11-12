@@ -1,8 +1,6 @@
 #include "unixsocket.h"
 #include <gtest/gtest.h>
 #include <sys/socket.h>
-#include <sys/un.h>
-#include <unistd.h>
 
 TEST(UnixSocket, ConnectCanStreamToBind) {
   int client = unix_socket();
