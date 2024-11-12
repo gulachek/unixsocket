@@ -1,6 +1,10 @@
 #ifndef UNIXSOCKET_H
 #define UNIXSOCKET_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Create a Unix Domain Socket using the `socket` system call.
  * @param type The `type` parameter passed to `socket`
@@ -48,5 +52,9 @@ int unix_send_fd(int sock, int fd_to_send);
  * @remarks Use this with @ref unix_send_fd
  */
 int unix_recv_fd(int sock);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

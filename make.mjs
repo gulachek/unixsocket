@@ -1,112 +1,84 @@
 import { cli, Path } from "esmakefile";
+import { PkgConfig } from "espkg-config";
 import { writeFile, readFile } from "node:fs/promises";
-import nunjucks from "nunjucks";
 
-function njxRender(name, context) {
-  return new Promise((resolve, reject) => {
-    nunjucks.render(name, context, (err, res) => {
-      if (err) {
-        reject(err);
-        return;
-      }
+import { njxRender } from "./jslib/njxRender.mjs";
+import { Clang } from "./jslib/clang.mjs";
+import Ajv from "ajv";
 
-      resolve(res);
-    });
-  });
+const ajv = new Ajv();
+const stringArray = { type: "array", items: { type: "string" } };
+const schema = {
+  type: "object",
+  properties: {
+    cc: { type: "string" },
+    cxx: { type: "string" },
+    cppflags: { ...stringArray },
+    cflags: { ...stringArray },
+    cxxflags: { ...stringArray },
+    ldflags: { ...stringArray },
+    pkgConfigPaths: { ...stringArray, uniqueItems: true },
+    libraryType: { type: "string", enum: ["static", "shared"] },
+  },
+  additionalProperties: false,
+};
+
+const validate = ajv.compile(schema);
+
+const inputConfig = JSON.parse(await readFile("config.json", "utf8"));
+if (!validate(inputConfig)) {
+  console.error('The configuration file "config.json" has errors.');
+  console.error(validate.errors);
+  process.exit(1);
 }
 
-async function addClangDeps(args, depsAbs) {
-  const depContents = await readFile(depsAbs, "utf8");
-  const escapedLines = depContents.replaceAll("\\\n", " ");
+const config = {
+  cc: "clang",
+  cxx: "clang++",
+  cppflags: [],
+  cflags: ["-std=c17"],
+  cxxflags: ["-std=c++20"],
+  ldflags: [],
+  pkgConfigPaths: ["pkgconfig"],
+  libraryType: "static",
+  ...inputConfig, // override the defaults
+};
 
-  const lines = escapedLines.split("\n");
-  if (lines.length < 1) return;
+const pkg = new PkgConfig({
+  searchPaths: config.pkgConfigPaths,
+});
 
-  const colonIndex = lines[0].indexOf(":");
-  if (colonIndex < 0) return;
-
-  for (const postreq of lines[0].slice(colonIndex + 1).split(/ +/)) {
-    if (!postreq) continue;
-
-    args.addPostreq(postreq);
-  }
-}
+const { flags: gtestCflags } = await pkg.cflags(["gtest_main"]);
+const { flags: gtestLibs } = await pkg.staticLibs(["gtest_main"]);
 
 cli((make) => {
   const src = Path.src("src/unixsocket.c");
   const include = Path.src("include");
-  const compileCommands = Path.build("compile_commands.json");
-  const lib = Path.build("libunixsocket.dylib");
   const doxyfileTemplate = Path.src("Doxyfile.njk");
   const doxyfile = Path.build("Doxyfile");
   const html = Path.build("html/index.html");
 
-  const cflags = ["-c", "-std=c17", "-I", make.abs(include)];
+  config.cppflags.unshift("-I", make.abs(include));
+  const clang = new Clang(make, config);
 
-  make.add("all", [lib, compileCommands, html]);
+  make.add("all", []);
 
-  const libs = [];
-
-  for (const arch of ["x86_64", "arm64"]) {
-    const obj = Path.gen(src, { ext: `${arch}.o` });
-    const libArch = obj.dir().join(`libunixsocket-${arch}.dylib`);
-    libs.push(libArch);
-
-    make.add(libArch, obj, (args) => {
-      return args.spawn("clang", [
-        "-dynamiclib",
-        "-arch",
-        arch,
-        "-o",
-        args.abs(libArch),
-        args.abs(obj),
-      ]);
-    });
-
-    make.add(obj, src, async (args) => {
-      const [s, o] = args.absAll(src, obj);
-      const deps = args.abs(Path.gen(obj, { ext: ".d" }));
-
-      const result = await args.spawn("clang", [
-        ...cflags,
-        "-arch",
-        arch,
-        "-o",
-        o,
-        "-MMD",
-        "-MF",
-        deps,
-        s,
-      ]);
-
-      if (!result) return false;
-      await addClangDeps(args, deps);
-
-      return true;
-    });
-  }
-
-  make.add(lib, libs, (args) => {
-    return args.spawn("lipo", [
-      "-create",
-      "-output",
-      args.abs(lib),
-      ...args.absAll(...libs),
-    ]);
+  const obj = clang.compile(src);
+  const lib = clang.link({
+    name: "unixsocket",
+    runtime: "c",
+    linkType: config.libraryType,
+    binaries: [obj],
   });
 
-  make.add(compileCommands, async (args) => {
-    const [j, s] = args.absAll(compileCommands, src);
-
-    const contents = JSON.stringify([
-      {
-        directory: make.buildRoot,
-        file: s,
-        arguments: ["clang", ...cflags, s],
-      },
-    ]);
-
-    await writeFile(j, contents, "utf8");
+  const testSrc = Path.src("test/test.cpp");
+  const testObj = clang.compile(testSrc, { extraFlags: gtestCflags });
+  const test = clang.link({
+    name: "unixsocket_test",
+    runtime: "c++",
+    linkType: "executable",
+    binaries: [testObj, lib],
+    extraFlags: [...gtestLibs],
   });
 
   make.add(doxyfile, [doxyfileTemplate], async (args) => {
@@ -120,4 +92,6 @@ cli((make) => {
   make.add(html, [doxyfile, Path.src("include/unixsocket.h")], async (args) => {
     return args.spawn("doxygen", [args.abs(doxyfile)]);
   });
+
+  make.add("all", [lib, clang.compileCommands(), html, test]);
 });
