@@ -17,10 +17,7 @@ TEST(UnixSocket, ConnectCanStreamToBind) {
 
   unix_connect(client, p);
 
-  struct sockaddr_un address;
-  socklen_t len;
-
-  int connection = accept(server, (struct sockaddr *)&address, &len);
+  int connection = unix_accept(server);
 
   int32_t n = 0x11223344;
   write(client, &n, sizeof(int32_t));

@@ -23,6 +23,12 @@ int unix_bind(int sock, const char *path) {
   return bind(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr_un));
 }
 
+int unix_accept(int sock) {
+  struct sockaddr_un addr;
+  socklen_t len = sizeof(struct sockaddr_un);
+  return accept(sock, (struct sockaddr *)&addr, &len);
+}
+
 int unix_connect(int sock, const char *path) {
   struct sockaddr_un addr;
   memset(&addr, 0, sizeof(struct sockaddr_un));

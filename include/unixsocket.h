@@ -27,6 +27,13 @@ int unix_socketpair(int socket_vector[2]);
 int unix_bind(int sock, const char *path);
 
 /**
+ * Call `accept` on a Unix Domain Socket
+ * @param sock The socket's file descriptor
+ * @return The return value of the `accept` system call
+ */
+int unix_accept(int sock);
+
+/**
  * Call `connect` on a socket to an `AF_UNIX` path address.
  * @param sock The socket's file descriptor
  * @param path The path to `connect` to
