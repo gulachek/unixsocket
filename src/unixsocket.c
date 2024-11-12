@@ -7,10 +7,10 @@
 #include <sys/un.h>
 #include <unistd.h>
 
-int unix_socket(int type) { return socket(PF_LOCAL, type, 0); }
+int unix_socket() { return socket(PF_LOCAL, SOCK_STREAM, 0); }
 
-int unix_socketpair(int type, int socket_vector[2]) {
-  return socketpair(PF_LOCAL, type, 0, socket_vector);
+int unix_socketpair(int socket_vector[2]) {
+  return socketpair(PF_LOCAL, SOCK_STREAM, 0, socket_vector);
 }
 
 int unix_bind(int sock, const char *path) {

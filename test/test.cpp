@@ -5,8 +5,8 @@
 #include <unistd.h>
 
 TEST(UnixSocket, ConnectCanStreamToBind) {
-  int client = unix_socket(SOCK_STREAM);
-  int server = unix_socket(SOCK_STREAM);
+  int client = unix_socket();
+  int server = unix_socket();
   const char *p = ".server.sock";
 
   unlink(p); // attempt to unlink previous socket

@@ -6,19 +6,17 @@ extern "C" {
 #endif
 
 /**
- * Create a Unix Domain Socket using the `socket` system call.
- * @param type The `type` parameter passed to `socket`
+ * Create a Unix Domain Socket stream using the `socket` system call.
  * @return The return value of `socket`
  */
-int unix_socket(int type);
+int unix_socket();
 
 /**
- * Create a Unix Domain Socket pair using `socketpair`.
- * @param[in] type The `type` parameter passed to `socketpair`
+ * Create a Unix Domain Socket stream pair using `socketpair`.
  * @param[out] socket_vector The `socket_vector` parameter passed to
  `socketpair`
  */
-int unix_socketpair(int type, int socket_vector[2]);
+int unix_socketpair(int socket_vector[2]);
 
 /**
  * Call `bind` on a socket with an `AF_UNIX` path address.
