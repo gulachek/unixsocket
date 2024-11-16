@@ -23,6 +23,8 @@ int unix_bind(int sock, const char *path) {
   return bind(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr_un));
 }
 
+int unix_listen(int sock, int backlog) { return listen(sock, backlog); }
+
 int unix_accept(int sock) {
   struct sockaddr_un addr;
   socklen_t len = sizeof(struct sockaddr_un);

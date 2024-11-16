@@ -27,6 +27,17 @@ int unix_socketpair(int socket_vector[2]);
 int unix_bind(int sock, const char *path);
 
 /**
+ * Call `listen` on a Unix Domain Socket
+ * @param sock The socket's file descriptor
+ * @param path The backlog to pass to `listen`
+ * @return The return value of the `listen` system call
+ * @remarks This is no different than calling `listen`. It only exists to save
+ * the user from needing to include another header to listen in between binding
+ * and accepting.
+ */
+int unix_listen(int sock, int backlog);
+
+/**
  * Call `accept` on a Unix Domain Socket
  * @param sock The socket's file descriptor
  * @return The return value of the `accept` system call

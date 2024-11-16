@@ -1,6 +1,5 @@
 #include "unixsocket.h"
 #include <gtest/gtest.h>
-#include <sys/socket.h>
 
 TEST(UnixSocket, ConnectCanStreamToBind) {
   int client = unix_socket();
@@ -11,7 +10,7 @@ TEST(UnixSocket, ConnectCanStreamToBind) {
 
   int rc = unix_bind(server, p);
   ASSERT_EQ(rc, 0) << "Failed to bind server to " << p;
-  listen(server, 2);
+  unix_listen(server, 2);
 
   unix_connect(client, p);
 
