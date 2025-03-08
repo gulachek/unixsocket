@@ -1,6 +1,6 @@
 {
-  "name": "libunixsocket",
-  "version": "1.0.0",
+  "name": "unixsocket",
+  "version": "0.1.1",
   "description": "",
   "type": "module",
   "main": "index.js",
