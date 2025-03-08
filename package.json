@@ -15,7 +15,7 @@
     "nunjucks": "^3.2.4"
   },
   "devDependencies": {
-    "ajv": "^8.17.1",
+    "esmakefile-cmake": "^0.1.2",
     "espkg-config": "^0.1.1"
   }
 }
