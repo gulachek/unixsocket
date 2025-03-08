@@ -17,8 +17,7 @@ int unix_bind(int sock, const char *path) {
   struct sockaddr_un addr;
   memset(&addr, 0, sizeof(struct sockaddr_un));
   addr.sun_family = AF_UNIX;
-  addr.sun_len = strlen(path);
-  strncpy(addr.sun_path, path, addr.sun_len);
+  strncpy(addr.sun_path, path, strlen(path));
 
   return bind(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr_un));
 }
@@ -35,8 +34,7 @@ int unix_connect(int sock, const char *path) {
   struct sockaddr_un addr;
   memset(&addr, 0, sizeof(struct sockaddr_un));
   addr.sun_family = AF_UNIX;
-  addr.sun_len = strlen(path);
-  strncpy(addr.sun_path, path, addr.sun_len);
+  strncpy(addr.sun_path, path, strlen(path));
 
   return connect(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr_un));
 }
@@ -97,9 +95,9 @@ int unix_recv_fd(int sock) {
 
   if (cmsg->cmsg_len != CMSG_LEN(sizeof(int))) {
     fprintf(stderr,
-            "recvmsg had cmsg_len %u instead of CMSG_LEN(sizeof(int)) "
+            "recvmsg had cmsg_len %lu instead of CMSG_LEN(sizeof(int)) "
             "(%lu)\n",
-            cmsg->cmsg_len, CMSG_LEN(sizeof(int)));
+            (size_t)cmsg->cmsg_len, CMSG_LEN(sizeof(int)));
     return -1;
   }
 
