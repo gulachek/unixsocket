@@ -6,3 +6,4 @@ metadata
 conan
 config.json
 vendor
+test/release/build
